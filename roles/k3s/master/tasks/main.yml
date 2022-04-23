@@ -40,33 +40,6 @@
     mode: 0644
   when: ansible_host == hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0])
 
-- name: Copy metallb namespace manifest to first master
-  template:
-    src: "metallb.namespace.j2"
-    dest: "/var/lib/rancher/k3s/server/manifests/metallb.namespace.yaml"
-    owner: root
-    group: root
-    mode: 0644
-  when: ansible_host == hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0])
-
-- name: Copy metallb ConfigMap manifest to first master
-  template:
-    src: "metallb.configmap.j2"
-    dest: "/var/lib/rancher/k3s/server/manifests/metallb.configmap.yaml"
-    owner: root
-    group: root
-    mode: 0644
-  when: ansible_host == hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0])
-
-- name: Copy metallb main manifest to first master
-  template:
-    src: "metallb.yaml.j2"
-    dest: "/var/lib/rancher/k3s/server/manifests/metallb.yaml"
-    owner: root
-    group: root
-    mode: 0644
-  when: ansible_host == hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0])
-
 - name: Init cluster inside the transient k3s-init service
   command:
     cmd: "systemd-run -p RestartSec=2 \
@@ -162,12 +135,12 @@
 
 - name: Create kubectl symlink
   file:
-    src: /usr/local/bin/k3s
-    dest: /usr/local/bin/kubectl
+    src: "{{ binary_path }}/k3s"
+    dest: "{{ binary_path }}/kubectl"
     state: link
 
 - name: Create crictl symlink
   file:
-    src: /usr/local/bin/k3s
-    dest: /usr/local/bin/crictl
+    src: "{{ binary_path }}/k3s"
+    dest: "{{ binary_path }}/crictl"
     state: link

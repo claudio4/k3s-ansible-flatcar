@@ -1,0 +1,17 @@
+# Based on https://vadosware.io/post/installing-python-on-coreos-with-ansible/
+- name: setup python for flatcar
+  hosts: all
+  gather_facts: False
+  tasks:
+    - block:
+          - name: check for installed python
+            raw: "[ -f /home/core/.opt/pypy/bin/python ] && echo 'installed' || echo 'missing'"
+            register: py_check
+          - meta: end_host
+            when: py_check.stdout_lines[0] == "installed"
+    - name: create opt
+      raw: "mkdir -p /home/core/.opt"
+    - name: dowload pypy
+      raw: "wget -O - https://downloads.python.org/pypy/pypy{{ python_version }}-v{{ pypy_version }}-linux64.tar.bz2 | tar xj -C /home/core/.opt/"
+    - name: 
+      raw: "mv /home/core/.opt/pypy{{ python_version }}-v{{ pypy_version }}-linux64 /home/core/.opt/pypy"
