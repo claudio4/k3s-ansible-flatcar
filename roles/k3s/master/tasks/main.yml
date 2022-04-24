@@ -40,32 +40,34 @@
     mode: 0644
   when: ansible_host == hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0])
 
-- name: Init cluster inside the transient k3s-init service
-  command:
-    cmd: "systemd-run -p RestartSec=2 \
-                      -p Restart=on-failure \
-                      --unit=k3s-init \
-                      k3s server {{ server_init_args }}"
-    creates: "{{ systemd_dir }}/k3s.service"
-  args:
-    warn: false  # The ansible systemd module does not support transient units
+- block: 
+  - name: Init cluster inside the transient k3s-init service
+    command:
+      cmd: "systemd-run -p RestartSec=2 \
+                        -p Restart=on-failure \
+                        --unit=k3s-init \
+                        k3s server {{ server_init_args }}"
+      creates: "{{ systemd_dir }}/k3s.service"
+    args:
+      warn: false  # The ansible systemd module does not support transient units
 
-- name: Verification
-  block:
-    - name: Verify that all nodes actually joined (check k3s-init.service if this fails)
-      command:
-        cmd: k3s kubectl get nodes -l "node-role.kubernetes.io/master=true" -o=jsonpath="{.items[*].metadata.name}"
-      register: nodes
-      until: nodes.rc == 0 and (nodes.stdout.split() | length) == (groups['master'] | length)
-      retries: "{{ retry_count | default(20) }}"
-      delay: 10
-      changed_when: false
-  always:
-    - name: Kill the temporary service used for initialization
-      systemd:
-        name: k3s-init
-        state: stopped
-      failed_when: false
+  - name: Verification
+    block:
+      - name: Verify that all nodes actually joined (check k3s-init.service if this fails)
+        command:
+          cmd: k3s kubectl get nodes -l "node-role.kubernetes.io/master=true" -o=jsonpath="{.items[*].metadata.name}"
+        register: nodes
+        until: nodes.rc == 0 and (nodes.stdout.split() | length) == (groups['master'] | length)
+        retries: "{{ retry_count | default(20) }}"
+        delay: 10
+        changed_when: false
+    always:
+      - name: Kill the temporary service used for initialization
+        systemd:
+          name: k3s-init
+          state: stopped
+        failed_when: false
+  when: not installed
 
 - name: Copy K3s service file
   register: k3s_service
@@ -82,6 +84,7 @@
     daemon_reload: yes
     state: restarted
     enabled: yes
+  when: k3s_service.changed or not installed
 
 - name: Wait for node-token
   wait_for:
@@ -144,3 +147,8 @@
     src: "{{ binary_path }}/k3s"
     dest: "{{ binary_path }}/crictl"
     state: link
+
+- name: Mark master as installed
+  file:
+    path: /etc/rancher/.ansible-installed
+    state: touch

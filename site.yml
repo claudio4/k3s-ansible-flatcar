@@ -1,18 +1,31 @@
 ---
+- hosts: k3s_cluster
+  become: true
+  tasks:
+    - stat:
+        path: /etc/rancher/.ansible-installed
+      register: f_installed
 
 - hosts: k3s_cluster
   gather_facts: true
   become: true
+  vars:
+    - installed: f_installed.stat.exists
   roles:
     - role: prereq
     - role: download
+      when: not installed
 
 - hosts: master
   become: true
+  vars:
+    - installed: f_installed.stat.exists
   roles:
     - role: k3s/master
 
 - hosts: node
   become: true
+  vars:
+    - installed: f_installed.stat.exists
   roles:
     - role: k3s/node
