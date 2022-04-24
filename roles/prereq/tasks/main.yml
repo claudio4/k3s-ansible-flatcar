@@ -4,10 +4,11 @@
     name: "{{ system_timezone }}"
   when: (system_timezone is defined) and (system_timezone != "Your/Timezone")
 
-- name: Set SELinux to disabled state
-  selinux:
-    state: disabled
-  # when: ansible_os_family == "RedHat"
+# Flatcar does include SELinux but does not enforce it by default so this is not really necessary, also ansible SELinux module is a hassle
+# - name: Set SELinux to disabled state
+#   selinux:
+#     state: disabled
+#   # when: ansible_os_family == "RedHat"
 
 - name: Enable IPv4 forwarding
   sysctl:
@@ -47,17 +48,6 @@
     - net.bridge.bridge-nf-call-iptables
     - net.bridge.bridge-nf-call-ip6tables
 
-- name: Add /usr/local/bin to sudo secure_path
-  lineinfile:
-    line: 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
-    regexp: "Defaults(\\s)*secure_path(\\s)*="
-    state: present
-    insertafter: EOF
-    path: /etc/sudoers
-    validate: 'visudo -cf %s'
-  # when: ansible_os_family == "RedHat"
-- name: Populate service facts
-  service_facts:
 - name: Disable docker socket
   systemd:
     name: docker.socket
@@ -70,6 +60,7 @@
     enabled: no
     state: stopped
   failed_when: false
+  # k3s uses its own containerd so this service is unnecessary
 - name: Disable containerd
   systemd:
     name: containerd
