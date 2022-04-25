@@ -27,5 +27,5 @@ binary_path: "/opt/bin"
 k3s_token: "some-SUPER-DEDEUPER-secret-password"
 
 # change these to your liking, the only required one is--no-deploy servicelb
-extra_server_args: "--flannel-backend=none --no-deploy servicelb --no-deploy traefik"
+extra_server_args: "--flannel-backend=none --disable-network-policy --no-deploy servicelb --no-deploy traefik"
 extra_agent_args: ""
